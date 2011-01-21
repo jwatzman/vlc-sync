@@ -19,21 +19,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 
 --]]
 
-function get_time()
-	return math.floor(vlc.var.get(vlc.object.input(), "time"))
-end
+--[[
+KNOWN BUGS
+ - no way to kick it out of accept()
+ - no feedback when it begins serving succesfully
+ - no way to kill it easily even after it gets a connection, though this should
+   work
+ - does not detect remote disconnect
+ - this code is really crappy
+]]--
 
-function is_playing()
-	return vlc.input.is_playing()
-end
+-- set to false to tell the serve function to go away
+enabled = true
 
 function dlog(msg)
 	vlc.msg.dbg(string.format("[sync-server] %s", msg))
-end
-
-function sleep(secs)
-	for i = 1,100000000 do
-	end
 end
 
 function descriptor()
@@ -47,35 +47,56 @@ function descriptor()
 		           .. "internet. This is the server component -- the client "
 		           .. "connects to us and we tell the client how far into the "
 		           .. "video we should be.";
-		capabilities = {};
+		capabilities = { "input-listener", "playing-listener" };
 	}
 end
 
-function serve()
-	local l = vlc.net.listen_tcp("localhost", 1234)
-	local fd = l:accept()
-	if fd < 0 then
-		dlog("accept failed")
-	else
-		for i = 1,10 do
-			vlc.net.send(fd, string.format("%i\n", get_time()))
-			sleep(1)
-		end
-		vlc.net.close(fd)
+-- repeatedly send the time every second to fd until we are no longer enabled
+function serve(fd)
+	while enabled do
+		local t = math.floor(vlc.var.get(vlc.object.input(), "time"))
+		vlc.net.send(fd, string.format("%i\n", t))
+		os.execute("sleep 1") -- XXX won't work on Windows
 	end
-	vlc.deactivate()
+	close(fd)
 end
 
 function activate()
 	dlog("activated")
-	if not is_playing() then
+	enabled = true
+
+	if not vlc.input.is_playing() then
 		dlog("not playing")
-		vlc.deactivate()
+		local dialog = vlc.dialog("Sync Server")
+		dialog:add_label("Nothing is playing!", 1, 1, 1, 1)
+		dialog:add_button("Close", vlc.deactivate, 2, 1, 1, 1)
+		dialog:show()
 	else
-		serve()
+		local l = vlc.net.listen_tcp("localhost", 1234)
+		local fd = l:accept()
+		if fd < 0 then
+			dlog("accept failed")
+			local dialog = vlc.dialog("Sync Server")
+			dialog:add_label("Failed to serve.", 1, 1, 1, 1)
+			dialog:add_button("Close", vlc.deactivate, 2, 1, 1, 1)
+			dialog:show()
+		else
+			serve(fd)
+		end
 	end
 end
 
 function deactivate()
 	dlog("deactivated")
+	enabled = false
+end
+
+function input_changed()
+	dlog("input changed")
+	vlc.deactivate()
+end
+
+function status_changed()
+	dlog("status changed")
+	vlc.deactivate()
 end
