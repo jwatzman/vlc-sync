@@ -1,6 +1,6 @@
 --[[
 
-Syncronization extension for VLC
+Syncronization extension for VLC -- server component
 Copyright (c) 2011 Joshua Watzman (sinclair44@gmail.com)
 
 This program is free software; you can redistribute it and/or modify
@@ -23,13 +23,26 @@ function get_time()
 	return math.floor(vlc.var.get(vlc.object.input(), "time"))
 end
 
+function is_playing()
+	return vlc.input.is_playing()
+end
+
+function dlog(msg)
+	vlc.msg.dbg(string.format("[sync-server] %s", msg))
+end
+
+function sleep(secs)
+	for i = 1,100000000 do
+	end
+end
+
 function descriptor()
 	return
 	{
 		title = "Sync Server";
 		version = "1.0";
 		author = "jwatzman";
-		shortdesc = "Sync Server"
+		shortdesc = "Sync Server";
 		description = "Syncronizes two viewings of the same video over the "
 		           .. "internet. This is the server component -- the client "
 		           .. "connects to us and we tell the client how far into the "
@@ -38,18 +51,31 @@ function descriptor()
 	}
 end
 
-function activate()
-	vlc.msg.dbg("[sync-server] hello world!")
-	for i = 1,10
-		do
-			for j = 1,100000000
-				do
-				end
-			vlc.msg.dbg(string.format("[sync-server] secs %i", get_time()))
+function serve()
+	local l = vlc.net.listen_tcp("localhost", 1234)
+	local fd = l:accept()
+	if fd < 0 then
+		dlog("accept failed")
+	else
+		for i = 1,10 do
+			vlc.net.send(fd, string.format("%i\n", get_time()))
+			sleep(1)
 		end
+		vlc.net.close(fd)
+	end
 	vlc.deactivate()
 end
 
+function activate()
+	dlog("activated")
+	if not is_playing() then
+		dlog("not playing")
+		vlc.deactivate()
+	else
+		serve()
+	end
+end
+
 function deactivate()
-	vlc.msg.dbg("[sync-server] goodbye world!")
+	dlog("deactivated")
 end
