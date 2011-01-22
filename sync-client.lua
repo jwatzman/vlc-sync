@@ -1,6 +1,6 @@
 --[[
 
-Syncronization extension for VLC -- server component
+Syncronization extension for VLC -- client component
 Copyright (c) 2011 Joshua Watzman (sinclair44@gmail.com)
 
 This program is free software; you can redistribute it and/or modify
@@ -19,44 +19,42 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 
 --]]
 
---[[
-KNOWN BUGS
- - no way to kick it out of accept()
- - no feedback when it begins serving succesfully
- - no way to kill it easily even after it gets a connection, though this should
-   work
- - does not detect remote disconnect
- - this code is really crappy
-]]--
-
--- set to false to tell the serve function to go away
+-- set to false to tell TODO
 enabled = true
 
 function dlog(msg)
-	vlc.msg.dbg(string.format("[sync-server] %s", msg))
+	vlc.msg.dbg(string.format("[sync-client] %s", msg))
 end
 
 function descriptor()
 	return
 	{
-		title = "Sync Server";
+		title = "Sync Client";
 		version = "1.0";
 		author = "jwatzman";
-		shortdesc = "Sync Server";
-		description = "Syncronizes two viewings of the same video over the "
-		           .. "internet. This is the server component -- the client "
-		           .. "connects to us and we tell the client how far into the "
-		           .. "video we should be.";
+		shortdesc = "Sync Client";
+		description = "Synchronizes two viewings of the same video over the "
+		           .. "internet. This is the client component -- we connect "
+		           .. "to the server and it tells us how far into the video "
+		           .. "we should be.";
 		capabilities = { "input-listener", "playing-listener" };
 	}
 end
 
--- repeatedly send the time every second to fd until we are no longer enabled
-function serve(fd)
+function client(fd)
 	while enabled do
-		local t = math.floor(vlc.var.get(vlc.object.input(), "time"))
-		vlc.net.send(fd, string.format("%i\n", t))
-		os.execute("sleep 1") -- XXX won't work on Windows
+		local pollfds = {}
+		pollfds[fd] = vlc.net.POLLIN
+
+		if vlc.net.poll(pollfds, 1) > 0 then
+			local str = vlc.net.recv(fd, 1000)
+			if str == "" or str == "\004" then
+				enabled = false
+				vlc.deactivate()
+			else
+				dlog(str)
+			end
+		end
 	end
 	vlc.net.close(fd)
 end
@@ -67,21 +65,21 @@ function activate()
 
 	if not vlc.input.is_playing() then
 		dlog("not playing")
-		local dialog = vlc.dialog("Sync Server")
+		local dialog = vlc.dialog("Sync Client")
 		dialog:add_label("Nothing is playing!", 1, 1, 1, 1)
 		dialog:add_button("Close", vlc.deactivate, 2, 1, 1, 1)
 		dialog:show()
 	else
-		local l = vlc.net.listen_tcp("localhost", 1234)
-		local fd = l:accept()
+		local fd = vlc.net.connect_tcp("localhost", 1234)
+		dlog(fd)
 		if fd < 0 then
-			dlog("accept failed")
-			local dialog = vlc.dialog("Sync Server")
-			dialog:add_label("Failed to serve.", 1, 1, 1, 1)
+			dlog("connect_tcp failed")
+			local dialog = vlc.dialog("Sync Client")
+			dialog:add_label("Connection failed.", 1, 1, 1, 1)
 			dialog:add_button("Close", vlc.deactivate, 2, 1, 1, 1)
 			dialog:show()
 		else
-			serve(fd)
+			client(fd)
 		end
 	end
 end
