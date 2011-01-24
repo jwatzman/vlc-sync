@@ -23,8 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 KNOWN BUGS
  - no way to kick it out of accept()
  - no feedback when it begins serving succesfully
- - no way to kill it easily even after it gets a connection, though this should
-   work
  - does not detect remote disconnect
  - this code is really crappy
  - TODO should we be be checking for a nil vlc.object.input or not is_playing?
@@ -41,7 +39,7 @@ function descriptor()
 	return
 	{
 		title = "Sync Server";
-		version = "1.0";
+		version = "2011-01-24";
 		author = "jwatzman";
 		shortdesc = "Sync Server";
 		description = "Syncronizes two viewings of the same video over the "

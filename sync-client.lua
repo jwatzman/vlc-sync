@@ -30,7 +30,7 @@ function descriptor()
 	return
 	{
 		title = "Sync Client";
-		version = "1.0";
+		version = "2011-01-24";
 		author = "jwatzman";
 		shortdesc = "Sync Client";
 		description = "Synchronizes two viewings of the same video over the "
