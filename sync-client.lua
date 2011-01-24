@@ -52,7 +52,17 @@ function client(fd)
 				enabled = false
 				vlc.deactivate()
 			else
-				dlog(str)
+				local input = vlc.object.input()
+
+				local i, j = string.find(str, "%d+\n")
+				local remote_time = tonumber(string.sub(str, i, j))
+				local local_time = math.floor(vlc.var.get(input, "time"))
+
+				if math.abs(remote_time - local_time) > 1 then
+					dlog(string.format("updating time from %i to %i",
+						local_time, remote_time))
+					vlc.var.set(input, "time", remote_time)
+				end
 			end
 		end
 	end
@@ -71,7 +81,6 @@ function activate()
 		dialog:show()
 	else
 		local fd = vlc.net.connect_tcp("localhost", 1234)
-		dlog(fd)
 		if fd < 0 then
 			dlog("connect_tcp failed")
 			local dialog = vlc.dialog("Sync Client")
