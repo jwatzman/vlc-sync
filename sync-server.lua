@@ -27,6 +27,7 @@ KNOWN BUGS
    work
  - does not detect remote disconnect
  - this code is really crappy
+ - TODO should we be be checking for a nil vlc.object.input or not is_playing?
 ]]--
 
 -- set to false to tell the serve function to go away
@@ -54,9 +55,15 @@ end
 -- repeatedly send the time every second to fd until we are no longer enabled
 function serve(fd)
 	while enabled do
-		local t = math.floor(vlc.var.get(vlc.object.input(), "time"))
-		vlc.net.send(fd, string.format("%i\n", t))
-		os.execute("sleep 1") -- XXX won't work on Windows
+		local input = vlc.object.input()
+		if not input then
+			enabled = false
+			vlc.deactivate()
+		else
+			local t = math.floor(vlc.var.get(input, "time"))
+			vlc.net.send(fd, string.format("%i\n", t))
+			os.execute("sleep 1") -- XXX won't work on Windows
+		end
 	end
 	vlc.net.close(fd)
 end

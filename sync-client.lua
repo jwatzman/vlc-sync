@@ -46,13 +46,16 @@ function client(fd)
 		local pollfds = {}
 		pollfds[fd] = vlc.net.POLLIN
 
-		if vlc.net.poll(pollfds, 1) > 0 then
+		local input = vlc.object.input()
+		if not input then
+			enabled = false
+			vlc.deactivate()
+		elseif vlc.net.poll(pollfds, 1) > 0 then
 			local str = vlc.net.recv(fd, 1000)
 			if str == "" or str == "\004" then
 				enabled = false
 				vlc.deactivate()
 			else
-				local input = vlc.object.input()
 
 				local i, j = string.find(str, "%d+\n")
 				local remote_time = tonumber(string.sub(str, i, j))
