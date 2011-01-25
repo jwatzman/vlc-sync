@@ -24,6 +24,7 @@ KNOWN BUGS
  - no way to kick it out of accept()
  - no feedback when it begins serving succesfully
  - does not detect remote disconnect
+ - no security
  - this code is really crappy
  - TODO should we be be checking for a nil vlc.object.input or not is_playing?
 ]]--
@@ -77,7 +78,7 @@ function activate()
 		dialog:add_button("Close", vlc.deactivate, 2, 1, 1, 1)
 		dialog:show()
 	else
-		local l = vlc.net.listen_tcp("localhost", 1234)
+		local l = vlc.net.listen_tcp("0.0.0.0", 1234)
 		local fd = l:accept()
 		if fd < 0 then
 			dlog("accept failed")
