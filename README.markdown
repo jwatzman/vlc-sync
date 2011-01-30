@@ -32,6 +32,7 @@ client. You will probably want to at least change the server location that
 is hardcoded in the client.
 
 The extensions directory is located at:
+
  - OS X systemwide: /Applications/VLC.app/Contents/MacOS/share/lua/extensions/
  - OS X current user: ~/Library/Application Support/org.videolan.vlc/lua/extensions/
  - Linux systemwide: depends upon distro
