@@ -20,12 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 --]]
 
 --[[
-KNOWN BUGS
- - no way to kick it out of accept()
- - no feedback when it begins serving succesfully
- - does not detect remote disconnect
- - no security
- - this code is really crappy
  - TODO should we be be checking for a nil vlc.object.input or not is_playing?
 ]]--
 
