@@ -56,7 +56,7 @@ function client(fd)
 				enabled = false
 				vlc.deactivate()
 			else
-
+				vlc.keep_alive()
 				local i, j = string.find(str, "%d+\n")
 				local remote_time = tonumber(string.sub(str, i, j))
 				local local_time = math.floor(vlc.var.get(input, "time"))
