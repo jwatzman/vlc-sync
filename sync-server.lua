@@ -55,6 +55,7 @@ function serve(fd)
 		else
 			local t = math.floor(vlc.var.get(input, "time"))
 			vlc.net.send(fd, string.format("%i\n", t))
+			vlc.keep_alive()
 			os.execute("sleep 1") -- XXX won't work on Windows
 		end
 	end
