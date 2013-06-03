@@ -19,22 +19,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 
 --]]
 
--- # known bugs # --
--- if previous connection attempts have failed and vlc did not exit cleanly listen_tcp/accept may not succeed
-	-- workaround: kill all vlc instances and retry
--- get a keep alive warning when sync-server is waiting for client to connect
-	-- workaround: ignore it
-
 fd = nil
 input = nil
 
 last_tick = nil
-remote_playback_time = nil
 
 -- settings
 syncSettings = {
-	update_rate = 1, -- (sec) default
-	update_accuracy = 2, -- (sec) default
+	update_delay = 1, -- (sec) delay between attempting to receive sync packets
+	update_accuracy = 2, -- (sec) maximum tolerable difference between client and server playback times
 }
 
 callback_active = false
@@ -58,7 +51,7 @@ function descriptor()
 					.. "internet. This is the client component -- we connect "
 					.. "to the server and it tells us how far into the video "
 					.. "we should be.";
-		capabilities = { "input-listener", "playing-listener" };
+		capabilities = { "input-listener" };
 	}
 end
 
@@ -79,7 +72,8 @@ function connect()
 	port = port_input:get_text()
 	-- bug: does not function correctly on Mac OS X
 	-- open_dialog:delete()
-	open_dialog:hide() -- note: can not show any further dialogs after this point!
+	-- note: can not show any further dialogs after this point!
+	open_dialog:hide() 
 	open_dialog:update()
 	syncOSD.channel = vlc.osd.channel_register()
 	syncOSD.connecting_to_server()
@@ -91,16 +85,16 @@ function connect()
 	else
 		debug_log("connected to server")
 		syncOSD.connected_to_server()
-		last_tick = os.date('*t') --last_tick = os.clock()
+		last_tick = os.date('*t')
 		callback_active = true
+		-- note: intf-event occurs several times per second
 		vlc.var.add_callback(input, "intf-event", tick, "none")
 	end
 end
 
 function tick()
-	-- note: os.clock() does not increment in seconds on Mac OS X
-	local t = os.date('*t') --local t = os.clock()
-	if math.floor(os.difftime(os.time(t), os.time(last_tick))) > syncSettings.update_rate then --if (t < last_tick) or (t - last_tick) > syncSettings.update_rate then
+	local t = os.date('*t')
+	if math.floor(os.difftime(os.time(t), os.time(last_tick))) > syncSettings.update_delay then
 		debug_log("tick! "..math.floor(os.difftime(os.time(t), os.time(last_tick))))
 		last_tick = t
 		recv_state()
@@ -130,14 +124,14 @@ function recv_state()
 		else
 			-- receive playback time
 			local i, j = string.find(str, "%d+\n")
-			remote_playback_time = tonumber(string.sub(str, i, j))
+			local remote_playback_time = tonumber(string.sub(str, i, j))
 			debug_log("client playback time: "..remote_playback_time)
-			set_playback_time()
+			set_playback_time(remote_playback_time)
 		end
 	end
 end
 
-function set_playback_time()
+function set_playback_time(remote_playback_time)
 	local local_playback_time = math.floor(vlc.var.get(input, "time"))
 	if math.abs(local_playback_time - remote_playback_time) > syncSettings.update_accuracy then
 		debug_log(string.format("updating time from %i to %i", local_playback_time, remote_playback_time))	
@@ -163,15 +157,6 @@ function input_changed()
 	vlc.deactivate()
 end
 
-function playing_changed()
-	-- related to capabilities={"playing-listener"} in descriptor()
-	-- triggered by Pause/Play madia input event
-end
-
-function meta_changed()
-	-- unused
-end
-
 function deactivate()
 	debug_log("deactivated")
 	if input ~= nil and callback_active then
@@ -195,8 +180,7 @@ end
 
 -- horrible delay hack
 function delay(sec)
-	-- note: os.clock() does not increment in seconds on Mac OS X
-	local t = os.date('*t') --local t = os.clock()
+	local t = os.date('*t')
 	local last_delay_tick = t
 	debug_log("delaying: "..sec.." seconds")
 	while(os.difftime(os.time(last_delay_tick),os.time(t))) < sec do
@@ -221,16 +205,6 @@ function dialog_not_playing()
 	open_dialog:add_label("Nothing is playing!", 1, 1, 1, 1)
 	open_dialog:add_label("Please select a file to play before launching the sync-client.", 1, 2, 5 ,1)
 	open_dialog:add_button("Close", vlc.deactivate, 2, 3, 1, 1)
-	open_dialog:show()
-end
-
-function dialog_connect_failed()
-	--open_dialog = vlc.dialog("Sync Client")
-	--open_dialog:add_label("Connection failed!", 1, 1, 1, 1)
-	--open_dialog:add_label("Sync-server IP: "..host, 1, 2, 1, 1)
-	--open_dialog:add_label("Port: "..port, 1, 3, 1, 1)
-	--open_dialog:add_label("Please check the sync-server IP and port and try again.", 1, 4, 5, 1)
-	--open_dialog:add_button("Close", vlc.deactivate, 2, 5, 1, 1)
 	open_dialog:show()
 end
 

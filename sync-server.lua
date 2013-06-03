@@ -19,12 +19,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
 
 --]]
 
--- # known bugs # --
--- if previous connection attempts have failed and vlc did not exit cleanly listen_tcp/accept may not succeed
-	-- workaround: kill all vlc instances and retry
--- get a keep alive warning when sync-server is waiting for client to connect
-	-- workaround: ignore it
-
 fd = nil
 input = nil
 
@@ -32,8 +26,8 @@ last_tick = nil
 
 -- settings
 syncSettings = {
-	update_rate = 1, -- (sec) default
-	update_accuracy = 2, -- (sec) default
+	update_delay = 1, -- (sec) delay between sending sync packets
+	update_accuracy = 2, -- (sec) maximum tolerable difference between client and server 
 }
 
 -- default server host:port
@@ -75,23 +69,20 @@ function activate()
 		else
 			debug_log("client connected")
 			syncOSD.client_connected()
-			last_tick = os.date('*t') --last_tick = os.clock()
+			last_tick = os.date('*t')
+			-- note: intf-event occurs several times per second
 			vlc.var.add_callback(input, "intf-event", tick, "none")
 		end
 	end
 end
 
 function tick()
-	local t = os.date('*t') --local t = os.clock()
-	if math.floor(os.difftime(os.time(t), os.time(last_tick))) > syncSettings.update_rate then --if (t < last_tick) or (t - last_tick) > syncSettings.update_rate then
+	local t = os.date('*t')
+	if math.floor(os.difftime(os.time(t), os.time(last_tick))) > syncSettings.update_delay then
 		debug_log("tick! "..math.floor(os.difftime(os.time(t), os.time(last_tick))))
 		last_tick = t
-		send_state()
+		send_playback_time()
 	end
-end
-
-function send_state()
-	send_playback_time()
 end
 
 function send_playback_time()
@@ -118,15 +109,11 @@ function playing_changed()
 	debug_log("playing changed, current status: "..vlc.playlist.status())
 	if fd ~= nil then
 		if( vlc.playlist.status() == "paused" or vlc.playlist.status() == "stopped" ) then
-			vlc.net.send(fd,string.format("%s\n","pause"))
+			vlc.net.send(fd,"pause\n")
 		elseif vlc.playlist.status() == "playing" then
-			vlc.net.send(fd,string.format("%s\n","play"))
+			vlc.net.send(fd,"play\n")
 		end
 	end
-end
-
-function meta_changed()
-	-- unused
 end
 
 function deactivate()
