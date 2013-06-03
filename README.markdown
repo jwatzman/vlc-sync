@@ -70,5 +70,4 @@ WFM, YMMV, etc. Patches welcomed.
  - client connects to a hard-coded location
  - pausing on either end can create weird results until unpaused
  - does not deal at all with latency jitter
- - server does not actually block, but runs "sleep 1" in a loop
  - code is pretty crappy
