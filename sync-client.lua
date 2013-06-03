@@ -224,16 +224,6 @@ function dialog_not_playing()
 	open_dialog:show()
 end
 
-function dialog_connect_failed()
-	--open_dialog = vlc.dialog("Sync Client")
-	--open_dialog:add_label("Connection failed!", 1, 1, 1, 1)
-	--open_dialog:add_label("Sync-server IP: "..host, 1, 2, 1, 1)
-	--open_dialog:add_label("Port: "..port, 1, 3, 1, 1)
-	--open_dialog:add_label("Please check the sync-server IP and port and try again.", 1, 4, 5, 1)
-	--open_dialog:add_button("Close", vlc.deactivate, 2, 5, 1, 1)
-	open_dialog:show()
-end
-
 -- osd
 syncOSD = {
 	channel = nil,
