@@ -48,9 +48,9 @@ function descriptor()
 		url = 'https://github.com/jwatzman/vlc-sync/';
 		shortdesc = "Sync Client";
 		description = "Synchronizes two viewings of the same video over the "
-					.. "internet. This is the client component -- we connect "
-					.. "to the server and it tells us how far into the video "
-					.. "we should be.";
+				.. "internet. This is the client component -- we connect "
+				.. "to the server and it tells us how far into the video "
+				.. "we should be.";
 		capabilities = { "input-listener" };
 	}
 end
