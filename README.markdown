@@ -9,27 +9,18 @@ that really needs to happen is for the two people to open the same video
 file and for VLC to periodically transmit timecodes between the two in order
 to keep in sync. That's exactly what this VLC extension does -- it simply
 transmits timecodes from a server to a client; if the client is more than
-one second out of sync, the client seeks to that timecode.
+two seconds out of sync, the client seeks to that timecode.
 
 Installation
 ============
 
-The client should work on any OS that VLC supports. The server will not work
-on Windows because it needs to call the "sleep" shell command (yes, this is
-really idiotic and should be fixed -- patches accepted). Unfortunately, the
-OS X default interface, as of VLC version 1.1.6, does not allow running
-extensions. It is possible, though tricky, to build the QT4 interface on OS
-X and run extensions that way. I hope to post instructions to the VLC forum
-shortly.
+The client should work on any OS that VLC supports. Please report any bugs!
 
-The only actually tested configuration is with an OS X server and a Windows
-XP client.
+The only actually tested configuration is with a Windows 7 server and Mac
+OS X client.
 
 To install, drop sync-server.lua and/or sync-client.lua as appropriate into
-the VLC extensions directory. Note that the port number is hardcoded in both
-the client and the server, and the server location is hardcoded in the
-client. You will probably want to at least change the server location that
-is hardcoded in the client.
+the VLC extensions directory.
 
 The extensions directory is located at:
 
@@ -45,9 +36,9 @@ Usage
 
 The client and the server both begin playing the same video. While the video
 is playing (possibly paused if needed), the server activates the server
-extension from the View menu. A dialog will pop up if there is an error, but
-nothing will happen otherwise. Then the client activates the client
-extension the same way; again, a dialog will pop up only if there is an
+extension from the View menu. A dialog will pop up if there is an error. 
+Then the client activates the client extension the same way; and enters
+the server IP and port. A dialog will pop up if there is an
 error. Both videos should now be approximately in sync.
 
 Note that the server might need to have the sync port forwarded on the
@@ -60,6 +51,8 @@ Known Issues
 
 WFM, YMMV, etc. Patches welcomed.
 
+ - if previous connection attempts have failed and vlc did not exit cleanly listen_tcp/accept may not succeed (kill all vlc instances and retry)
+ - get a keep alive warning when sync-server is waiting for client to connect (ignore it)
  - server can only accept one connection
  - no way to kick server out of accept()
  - client and server do not always properly detect remote disconnects
@@ -70,5 +63,4 @@ WFM, YMMV, etc. Patches welcomed.
  - client connects to a hard-coded location
  - pausing on either end can create weird results until unpaused
  - does not deal at all with latency jitter
- - server does not actually block, but runs "sleep 1" in a loop
  - code is pretty crappy
